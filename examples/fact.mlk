@@ -1,0 +1,16 @@
+# Factorial (http://rosettacode.org/wiki/Factorial)
+
+fn fact(n: int) int {
+	result := 1;
+
+	for i := 0; i <= n; i += 1 {
+		result = result * i;
+	}
+
+	result
+}
+
+fn main() int {
+	println("fact(543) = {}", fact(543));
+	0
+}
