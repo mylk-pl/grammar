@@ -10,62 +10,92 @@ comment = ? #.*\n ?
 # Syntactical Grammar
 multiline_comment = '#[' ( utf8 | multiline_comment )* ']'
 
-unicode_escape = '\u' hex+
-hex_escape = '\x' hex+
+unicode_escape = '\u{' hex{1,6} '}'
+hex_escape = '\x' hex{2}
 bin_escape = '\b' ( '0' | '1' )+
-escapes = '\n' | '\t' | '\r' | '\v' | '\f' | '\b' | '\'' | '\"' | '\\' | unicode_escape | hex_escape | bin_escape
+escapes = '\n' | '\t' | '\r' | '\v' | '\f' | '\b' | "\'" | '\"' | '\\' | unicode_escape | hex_escape | bin_escape
 
 hex_literal = '0x' hex+
 bin_literal = '0b' ( '0' | '1' )+
 integer_literal = ( digit | '_' )+
 float_literal = ( digit | '_' ) [ '.' ( digit | '_' )* ] 'f';
-string_literal = '"' ( escapes | utf8 )* '"'
+string_literal = [ "utf8" | "utf16" | "utf32" ] '"' ( escapes | utf8 )* '"'
 char_literal = [ "utf8" | "utf16" | "utf32" ] "'" utf8 "'"
 
 number_literal = integer_literal | float_literal | hex_literal | bin_literal
-literal = number_literal | string_literal | unicode_literal | char_literal
+literal = number_literal | string_literal | char_literal
 
 
 # Types
-array_type = '[' integer_literal ( ',' integer_literal )* ']' type
-pointer_type = '^'+ type
+array_type = '[' ( integer_literal | identifier ) ( ',' ( integer_literal | identifier ) )* ']' type
+pointer_type = '^' [ type ]
 fn_type = 'fn' '(' type ( ',' type )* ')' [ type ]
+tuple_type = '(' ( identifier | literal )* ')'
+struct_type = 'struct' identifier '{' ( declaration ';' )* '}'
 
-type = array_type | pointer_type | fn_type | identifier
+type = array_type | pointer_type | fn_type | struct_type | identifier
 
 
 # Statements
-declaration = identifier ( ',' identifier )* ':' [ type ] [ '=' expr ]
-assignment = identifier '=' ( identifier | literal )
+declaration = identifier ( ',' identifier )* ( ( ':' type ) | ( ':' [ type ] '=' expr ) ) ';'
+assignment = expr '=' expr ';'
 
 sum_entry = identifier [ '(' type ')' ]
-sum = 'sum' identifier '{' sum_entry ( ',' sum_entry )* [ ',' ] '}'
+sum = 'sum' identifier [ ':' type ] '{' sum_entry ( ',' sum_entry )* [ ',' ] '}'
 
 enum_entry = identifier [ '=' literal ]
-enum = 'enum' '{' enum_entry ( ',' enum_entry )* [ ',' ] '}'
+enum = 'enum' identifier [ ':' type ] '{' enum_entry ( ',' enum_entry )* [ ',' ] '}'
 
-function = 'fn' identifier '(' declaration ( ',' declaration )* ')' [ type ] block
+function_body = '{' ( statement | ( 'return' expr ';' ) )* '}'
+function = 'fn' identifier '(' declaration ( ',' declaration )* ')' [ type ] function_body
 
-for = 'for' identifier [':' type] '=' expr ',' expr [',' expr] block
-while = 'while' expr block
+alias = 'type' identifier ':' type ';'
+
+loop_body = '{' ( statement | 'break' | 'continue' )* '}'
+for = 'for' identifier ':' [type] '=' expr ',' expr [',' expr] loop_body
+while = 'while' expr loop_body
+
+label = 'label' identifier ';'
+goto = 'goto' identifier ';'
+
+statement = ( for | while | alias ) | ( declaration | assignment | expr )
 
 
 # Expressions
-type_compare = identifier 'is' ( [ '.' ] type )
-cast = identifier 'as' ( [ '.' ] type )
+variant_compare = identifier 'is' '.' identifier
+cast = identifier 'as' ( ( '.' identifier ) | type )
 
-call = identifier '(' expr ( ',' expr )* ')' ';'
+call = expr '(' expr ( ',' expr )* ')'
 
-if = 'if' expr block [ 'else' block ]
+predicate = expr [ 'is' '.' identifier '@' identifier ]
+if = 'if' predicate block 'else' ( block | if )
+
+array_index = identifier | integer_literal
+array_subscript = identifier '[' array_index ( ',' array_index )* ']'
+
+field_access = expr '.' expr
 
 match = 'match' expr '{' match_case* '}'
-match_case = ( ( '.' identifier [ '@' identifier ] ) | ( identifier | literal ) | '*' ) block
+match_predicate = ( ( '.' identifier [ '@' identifier ] ) | expr | '*' )
+match_case =  match_predicate ( ',' match_predicate )* block
+
+bin_op = expr '+' expr
+bin_op = expr '-' expr
+bin_op = expr '*' expr
+bin_op = expr '/' expr
+bin_op = expr '^' expr
+
+unary_op = '-' expr
+unary_op = '+' expr
+unary_op = '^' expr
+unary_op = '@' expr
+
+operator = bin_op | unary_op | '(' operator ')'
+
+block = '{' statement* [ expr ] '}'
+
+expr = match | if | call | cast | type_compare | math | block | field_access | array_subscript | literal | operator
 
 
 # Misc
-expr = match | if | call | cast | type_compare | math
-statement = ( for | while ) | ( ( declaration | expr | assignment ) ';' )
-block = '{' statement* [ expr ] '}'
-
-
-program = ( function | sum | enum | multiline_comment )*
+program = ( function | alias | declaration | sum | enum | multiline_comment )*
