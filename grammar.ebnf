@@ -44,6 +44,7 @@ for_section = identifier ':' [ type ] '=' expr ',' expr [ ',' expr ]
 for = 'for' for_section ( ';' for_section ) block
 
 while = 'while' expr block
+loop = 'loop' block [ 'until' expr ';' ]
 
 label = 'label' identifier ';'
 goto = 'goto' identifier ';'
