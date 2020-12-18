@@ -83,7 +83,7 @@ operator = bin_op | unary_op | '(' operator ')'
 
 block = '{' statement* [ expr ] '}'
 
-expr = match | if | call | cast | type_compare | math | block | field_access | array_subscript | literal | operator | compound | variant_compare | 'true' | 'false'
+expr = match | if | call | cast | type_compare | math | block | field_access | array_subscript | literal | operator | compound | variant_compare | 'true' | 'false' | identifier | 'nil'
 
 
 # Program
