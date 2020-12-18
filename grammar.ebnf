@@ -40,7 +40,9 @@ assignment = expr (
 		'^=' | '<<=' | '>>=' | '&=' | '|=' | '~='
 	) expr ';'
 
-for = 'for' identifier ':' [type] '=' expr ',' expr [',' expr] block
+for_section = identifier ':' [ type ] '=' expr ',' expr [ ',' expr ]
+for = 'for' for_section ( ';' for_section ) block
+
 while = 'while' expr block
 
 label = 'label' identifier ';'
@@ -57,7 +59,7 @@ cast = identifier 'as' ( ( '.' identifier ) | type )
 
 call = expr '(' [ expr ( ',' expr )* ] ')'
 
-if = 'if' expr block 'else' ( block | if )
+if = 'if' expr block [ 'else' ( block | if ) ]
 
 array_subscript = identifier '[' expr ( ',' expr )* ']'
 
