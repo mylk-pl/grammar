@@ -48,7 +48,7 @@ goto = 'goto' identifier ';'
 
 return = 'return' expr ';'
 
-statement = for | while | alias | if | match | declaration | assignment | return | 'break' | 'continue' | ';' | ( expr ';' )
+statement = for | while | alias | if | match | declaration | assignment | return | 'break' | 'continue' | 'true' | 'false' | ';' | ( expr ';' )
 
 
 # Expressions
@@ -87,19 +87,21 @@ expr = match | if | call | cast | type_compare | math | block | field_access | a
 
 
 # Program
-declaration = identifier ( ',' identifier )* ( ( ':' type ) | ( ':' [ type ] '=' expr ) ) ';'
-
-function = 'fn' identifier '(' declaration ( ',' declaration )* ')' [ type ] block
-
 alias = 'type' identifier ':' type ';'
 
+declaration = identifier ( ',' identifier )* ( ( ':' type ) | ( ':' [ type ] '=' expr ) ) ';'
+
+function_param = identifier ( ',' identifier )* ':' type [ '=' literal ]
+function = 'fn' identifier '(' function_param ( ',' function_param )* ')' [ type ] block
+
+struct_entry = identifier ( ',' identifier )* ':' type
+struct = 'struct' identifier '{' [ struct_entry ] ( ',' struct_entry )* [ ',' ] '}'
+
 sum_entry = identifier [ '(' type ')' ]
-sum = 'sum' identifier [ ':' type ] '{' sum_entry ( ',' sum_entry )* [ ',' ] '}'
+sum = 'sum' identifier [ ':' type ] '{' [ sum_entry ] ( ',' sum_entry )* [ ',' ] '}'
 
-enum_entry = identifier [ '=' literal ]
-enum = 'enum' identifier [ ':' type ] '{' enum_entry ( ',' enum_entry )* [ ',' ] '}'
-
-struct = 'struct' identifier '{' ( declaration ';' )* '}'
+enum_entry = identifier [ '=' expr ]
+enum = 'enum' identifier [ ':' type ] '{' [ enum_entry ] ( ',' enum_entry )* [ ',' ] '}'
 
 multiline_comment = '#[' ( utf8 | multiline_comment )* ']'
 
