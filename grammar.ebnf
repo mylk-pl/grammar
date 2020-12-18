@@ -3,13 +3,11 @@ digit = ? 0-9 ?
 utf8 = ? . ?
 hex = ? [A-Fa-f0-9] ?
 
-identifier = ? [A-z_][A-z0-9_]+ ?
+identifier = ? [A-z_][A-z0-9_]* ?
 comment = ? #.*\n ?
 
 
 # Syntactical Grammar
-multiline_comment = '#[' ( utf8 | multiline_comment )* ']'
-
 unicode_escape = '\u{' hex{1,6} '}'
 hex_escape = '\x' hex{2}
 bin_escape = '\b' ( '0' | '1' )+
@@ -27,18 +25,73 @@ literal = number_literal | string_literal | char_literal
 
 
 # Types
-array_type = '[' ( integer_literal | identifier ) ( ',' ( integer_literal | identifier ) )* ']' type
+array_type = '[' expr ( ',' expr )* ']' type
 pointer_type = '^' [ type ]
 fn_type = 'fn' '(' type ( ',' type )* ')' [ type ]
-tuple_type = '(' ( identifier | literal )* ')'
-struct_type = 'struct' identifier '{' ( declaration ';' )* '}'
+tuple_type = '(' type ( ',' type )* ')'
 
-type = array_type | pointer_type | fn_type | struct_type | identifier
+type = array_type | pointer_type | fn_type | tuple_type | identifier
 
 
 # Statements
+assignment = expr (
+		'=' |
+		'+=' | '-=' | '*=' | '/=' | '**=' | '%=' |
+		'^=' | '<<=' | '>>=' | '&=' | '|=' | '~='
+	) expr ';'
+
+for = 'for' identifier ':' [type] '=' expr ',' expr [',' expr] block
+while = 'while' expr block
+
+label = 'label' identifier ';'
+goto = 'goto' identifier ';'
+
+return = 'return' expr ';'
+
+statement = for | while | alias | if | match | declaration | assignment | return | 'break' | 'continue' | ';' | ( expr ';' )
+
+
+# Expressions
+variant_compare = expr 'is' '.' identifier [ '@' identifier ]
+cast = identifier 'as' ( ( '.' identifier ) | type )
+
+call = expr '(' [ expr ( ',' expr )* ] ')'
+
+if = 'if' expr block 'else' ( block | if )
+
+array_subscript = identifier '[' expr ( ',' expr )* ']'
+
+field_access = expr '.' expr
+
+match_predicate = ( ( '.' identifier ( ',' '.' identifier )* ) [ '@' identifier ] ) | ( expr ( ',' expr ) ) | '*'
+match_case = match_predicate block
+match = 'match' expr '{' match_case* '}'
+
+compound_entry = ( expr | ( '[' expr ']' '=' expr ) | ( '.' identifier '=' expr ) )
+compound = [ '<' type '>' ] '(' compound_entry ( ',' compound_entry )* [ ',' ] ')'
+
+bin_op = expr (
+		'+' | '-' | '*' | '/' | '**' | '%' |
+		'and' | 'or' |
+		'^' | '<<' | '>>' | '&' | '|' |
+		'!=' | '<=' | '>=' | '<' | '>' | '=='
+	) expr
+
+unary_op = ( 'not' | '~' | '-' | '+' | '^' | '@' ) expr
+
+operator = bin_op | unary_op | '(' operator ')'
+
+block = '{' statement* [ expr ] '}'
+
+expr = match | if | call | cast | type_compare | math | block | field_access | array_subscript | literal | operator | compound | variant_compare
+
+
+# Program
 declaration = identifier ( ',' identifier )* ( ( ':' type ) | ( ':' [ type ] '=' expr ) ) ';'
-assignment = expr '=' expr ';'
+
+function = 'fn' identifier '(' declaration ( ',' declaration )* ')' [ type ] block
+
+alias = 'type' identifier ':' type ';'
 
 sum_entry = identifier [ '(' type ')' ]
 sum = 'sum' identifier [ ':' type ] '{' sum_entry ( ',' sum_entry )* [ ',' ] '}'
@@ -46,56 +99,8 @@ sum = 'sum' identifier [ ':' type ] '{' sum_entry ( ',' sum_entry )* [ ',' ] '}'
 enum_entry = identifier [ '=' literal ]
 enum = 'enum' identifier [ ':' type ] '{' enum_entry ( ',' enum_entry )* [ ',' ] '}'
 
-function_body = '{' ( statement | ( 'return' expr ';' ) )* '}'
-function = 'fn' identifier '(' declaration ( ',' declaration )* ')' [ type ] function_body
+struct = 'struct' identifier '{' ( declaration ';' )* '}'
 
-alias = 'type' identifier ':' type ';'
+multiline_comment = '#[' ( utf8 | multiline_comment )* ']'
 
-loop_body = '{' ( statement | 'break' | 'continue' )* '}'
-for = 'for' identifier ':' [type] '=' expr ',' expr [',' expr] loop_body
-while = 'while' expr loop_body
-
-label = 'label' identifier ';'
-goto = 'goto' identifier ';'
-
-statement = ( for | while | alias ) | ( declaration | assignment | expr )
-
-
-# Expressions
-variant_compare = identifier 'is' '.' identifier
-cast = identifier 'as' ( ( '.' identifier ) | type )
-
-call = expr '(' expr ( ',' expr )* ')'
-
-predicate = expr [ 'is' '.' identifier '@' identifier ]
-if = 'if' predicate block 'else' ( block | if )
-
-array_index = identifier | integer_literal
-array_subscript = identifier '[' array_index ( ',' array_index )* ']'
-
-field_access = expr '.' expr
-
-match = 'match' expr '{' match_case* '}'
-match_predicate = ( ( '.' identifier [ '@' identifier ] ) | expr | '*' )
-match_case =  match_predicate ( ',' match_predicate )* block
-
-bin_op = expr '+' expr
-bin_op = expr '-' expr
-bin_op = expr '*' expr
-bin_op = expr '/' expr
-bin_op = expr '^' expr
-
-unary_op = '-' expr
-unary_op = '+' expr
-unary_op = '^' expr
-unary_op = '@' expr
-
-operator = bin_op | unary_op | '(' operator ')'
-
-block = '{' statement* [ expr ] '}'
-
-expr = match | if | call | cast | type_compare | math | block | field_access | array_subscript | literal | operator
-
-
-# Misc
-program = ( function | alias | declaration | sum | enum | multiline_comment )*
+program = ( function | alias | declaration | sum | enum | struct | multiline_comment )*
