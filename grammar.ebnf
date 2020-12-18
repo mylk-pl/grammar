@@ -48,7 +48,7 @@ goto = 'goto' identifier ';'
 
 return = 'return' expr ';'
 
-statement = for | while | alias | if | match | declaration | assignment | return | 'break' | 'continue' | 'true' | 'false' | ';' | ( expr ';' )
+statement = for | while | alias | if | match | declaration | assignment | return | 'break' | 'continue' | ';' | ( expr ';' )
 
 
 # Expressions
@@ -83,7 +83,7 @@ operator = bin_op | unary_op | '(' operator ')'
 
 block = '{' statement* [ expr ] '}'
 
-expr = match | if | call | cast | type_compare | math | block | field_access | array_subscript | literal | operator | compound | variant_compare
+expr = match | if | call | cast | type_compare | math | block | field_access | array_subscript | literal | operator | compound | variant_compare | 'true' | 'false'
 
 
 # Program
@@ -91,7 +91,7 @@ alias = 'type' identifier ':' type ';'
 
 declaration = identifier ( ',' identifier )* ( ( ':' type ) | ( ':' [ type ] '=' expr ) ) ';'
 
-function_param = identifier ( ',' identifier )* ':' type [ '=' literal ]
+function_param = identifier ( ',' identifier )* ':' type
 function = 'fn' identifier '(' function_param ( ',' function_param )* ')' [ type ] block
 
 struct_entry = identifier ( ',' identifier )* ':' type
