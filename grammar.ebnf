@@ -1,0 +1,111 @@
+# Lexical Grammar
+digit = ? 0-9 ?
+utf8 = ? . ?
+hex = ? [A-Fa-f0-9] ?
+
+identifier = ? [A-z_][A-z0-9_]* ?
+comment = ? #.*\n ?
+
+
+# Syntactical Grammar
+unicode_escape = '\u{' hex{1,6} '}'
+hex_escape = '\x' hex{2}
+bin_escape = '\b' ( '0' | '1' )+
+escapes = '\n' | '\t' | '\r' | '\v' | '\f' | '\b' | "\'" | '\"' | '\\' | unicode_escape | hex_escape | bin_escape
+
+hex_literal = '0x' hex+
+bin_literal = '0b' ( '0' | '1' )+
+integer_literal = ( digit | '_' )+
+float_literal = ( digit | '_' ) [ '.' ( digit | '_' )* ] 'f';
+string_literal = [ "utf8" | "utf16" | "utf32" ] '"' ( escapes | utf8 )* '"'
+char_literal = [ "utf8" | "utf16" | "utf32" ] "'" utf8 "'"
+
+number_literal = integer_literal | float_literal | hex_literal | bin_literal
+literal = number_literal | string_literal | char_literal
+
+
+# Types
+array_type = '[' expr ( ',' expr )* ']' type
+pointer_type = '^' [ type ]
+fn_type = 'fn' '(' type ( ',' type )* ')' [ type ]
+tuple_type = '(' type ( ',' type )* ')'
+
+type = array_type | pointer_type | fn_type | tuple_type | identifier
+
+
+# Statements
+assignment = expr (
+		'=' |
+		'+=' | '-=' | '*=' | '/=' | '**=' | '%=' |
+		'^=' | '<<=' | '>>=' | '&=' | '|=' | '~='
+	) expr ';'
+
+for_section = identifier ':' [ type ] '=' expr ',' expr [ ',' expr ]
+for = 'for' for_section ( ';' for_section ) block
+
+while = 'while' expr block
+loop = 'loop' block [ 'until' expr ';' ]
+
+label = 'label' identifier ';'
+goto = 'goto' identifier ';'
+
+return = 'return' expr ';'
+
+statement = for | while | alias | if | match | declaration | assignment | return | 'break' | 'continue' | ';' | ( expr ';' )
+
+
+# Expressions
+variant_compare = expr 'is' '.' identifier [ '@' identifier ]
+cast = identifier 'as' ( ( '.' identifier ) | type )
+
+call = expr '(' [ expr ( ',' expr )* ] ')'
+
+if = 'if' expr block [ 'else' ( block | if ) ]
+
+array_subscript = identifier '[' expr ( ',' expr )* ']'
+
+field_access = expr '.' expr
+
+match_predicate = ( ( '.' identifier ( ',' '.' identifier )* ) [ '@' identifier ] ) | ( expr ( ',' expr ) ) | '*'
+match_case = match_predicate block
+match = 'match' expr '{' match_case* '}'
+
+compound_entry = ( expr | ( '[' expr ']' '=' expr ) | ( '.' identifier '=' expr ) )
+compound = [ '<' type '>' ] '(' compound_entry ( ',' compound_entry )* [ ',' ] ')'
+
+bin_op = expr (
+		'+' | '-' | '*' | '/' | '**' | '%' |
+		'and' | 'or' |
+		'^' | '<<' | '>>' | '&' | '|' |
+		'!=' | '<=' | '>=' | '<' | '>' | '=='
+	) expr
+
+unary_op = ( 'not' | '~' | '-' | '+' | '^' | '@' ) expr
+
+operator = bin_op | unary_op | '(' operator ')'
+
+block = '{' statement* [ expr ] '}'
+
+expr = match | if | call | cast | type_compare | math | block | field_access | array_subscript | literal | operator | compound | variant_compare | 'true' | 'false' | identifier | 'nil'
+
+
+# Program
+alias = 'type' identifier ':' type ';'
+
+declaration = identifier ( ',' identifier )* ( ( ':' type ) | ( ':' [ type ] '=' expr ) ) ';'
+
+function_param = identifier ( ',' identifier )* ':' type
+function = 'fn' identifier '(' function_param ( ',' function_param )* ')' [ type ] block
+
+struct_entry = identifier ( ',' identifier )* ':' type
+struct = 'struct' identifier '{' [ struct_entry ] ( ',' struct_entry )* [ ',' ] '}'
+
+sum_entry = identifier [ '(' type ')' ]
+sum = 'sum' identifier [ ':' type ] '{' [ sum_entry ] ( ',' sum_entry )* [ ',' ] '}'
+
+enum_entry = identifier [ '=' expr ]
+enum = 'enum' identifier [ ':' type ] '{' [ enum_entry ] ( ',' enum_entry )* [ ',' ] '}'
+
+multiline_comment = '#[' ( utf8 | multiline_comment )* ']'
+
+program = ( function | alias | declaration | sum | enum | struct | multiline_comment )*

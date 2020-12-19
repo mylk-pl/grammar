@@ -1,0 +1,14 @@
+# Naive recursive implementation of Fibonacci.
+
+fn fib(n: int) int {
+	match n {
+		0 { 0 }
+		1 { 1 }
+		* { fib(n - 1) + fib(n - 2) }
+	}
+}
+
+fn main() int {
+	println("fib(14) = {}", fib(14));
+	0
+}
